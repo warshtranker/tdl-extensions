@@ -4,7 +4,7 @@
 
 # The script will allow you to check already downloaded files, get list of not downloaded files and list of all duplicate files with different sizes
 
-# WARNING! The script will download only ONE file with the same name and size.
+# WARNING! The script will save only ONE file with the same name and size.
 
 """
 1. Export channel or group history to result.json file via telegram client (select only files in export popup) or tdl
