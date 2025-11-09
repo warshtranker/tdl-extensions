@@ -17,7 +17,7 @@ subdirectory to "aliens" subdirectory.
 import os
 import json
 from pathlib import Path
-
+batch = True
 def check_alien_files():
     """
     Check files in 'files' subfolder against result.json
@@ -86,7 +86,11 @@ def check_alien_files():
     
     # Create batch file to move alien files
     if alien_files:
-        create_move_batch_file(alien_files, files_dir, aliens_dir)
+        if batch:
+            create_move_batch_file(alien_files, files_dir, aliens_dir)
+        else:
+            #paste here move files function
+            copy_func = 1
     else:
         print("No alien files found. No batch file created.")
 
