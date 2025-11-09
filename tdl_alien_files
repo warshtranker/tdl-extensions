@@ -1,0 +1,131 @@
+"""
+Script version 1.0
+Telegram Downloader (tdl) Alien Files
+
+TL;DR: identify files in "files" directory which not exists in "result.json" file.
+
+The script grabs all file names and file sizes from "result.json"
+then check subdirectory "files" for those file names and file sizes. 
+Path to all filens from "files" subdirectory not presented in 
+"result.json" will be saved to "move_aliens.bat". 
+If you run the .bat file it will move all alien files from "files"
+subdirectory to "aliens" subdirectory.
+
+"""
+
+
+import os
+import json
+from pathlib import Path
+
+def check_alien_files():
+    """
+    Check files in 'files' subfolder against result.json
+    Create batch file to move files not found in result.json
+    """
+    
+    # Check if result.json exists
+    if not os.path.isfile("result.json"):
+        print("result.json doesn't exist")
+        return
+    
+    # Check if files subfolder exists
+    files_dir = Path(os.path.join("files"))
+    if not files_dir.exists():
+        print("'files' subfolder doesn't exist")
+        return
+    
+    # Create aliens directory if it doesn't exist
+    aliens_dir = Path(os.path.join("aliens"))
+    aliens_dir.mkdir(exist_ok=True)
+    
+    # Read result.json
+    try:
+        with open("result.json", 'r', encoding='utf-8') as f:
+            data = json.load(f)
+    except Exception as e:
+        print(f"Error reading result.json: {e}")
+        return
+    
+    # Build a set of known files from result.json
+    known_files = set()
+    
+    # Process messages
+    messages = data.get("messages", [])
+    print(f"Processing {len(messages)} messages from result.json...")
+    
+    for message in messages:
+        # Check if message has file information
+        if "file_name" in message:
+            file_name = message["file_name"]
+            file_size = message["file_size"]
+            
+            if file_name and file_size is not None:
+                known_files.add((file_name, file_size))
+    
+    print(f"Found {len(known_files)} known files in result.json")
+    
+    # Get all files from 'files' subfolder
+    files_in_folder = list(files_dir.glob("*"))
+    print(f"Found {len(files_in_folder)} files in 'files' subfolder")
+    
+    # Identify alien files (files not in result.json with matching name and size)
+    alien_files = []
+    
+    for file_path in files_in_folder:
+        if file_path.is_file():
+            file_name = file_path.name
+            file_size = file_path.stat().st_size
+            
+            # Check if this file (name + size) exists in known_files
+            if (file_name, file_size) not in known_files:
+                alien_files.append(file_path)
+                print(f"ALIEN: {file_name} ({file_size} bytes)")
+    
+    print(f"\nFound {len(alien_files)} alien files")
+    
+    # Create batch file to move alien files
+    if alien_files:
+        create_move_batch_file(alien_files, files_dir, aliens_dir)
+    else:
+        print("No alien files found. No batch file created.")
+
+def create_move_batch_file(alien_files, source_dir, dest_dir):
+    """
+    Create a batch file with move commands for alien files
+    """
+    batch_content = [
+        "@echo off",
+        "echo Moving alien files...",
+        "echo.",
+        ""
+    ]
+    
+    # Add move commands for each alien file
+    for file_path in alien_files:
+        source_path = file_path
+        dest_path = dest_dir / file_path.name
+        
+        # Use quotes around paths to handle spaces
+        move_cmd = f'move "{source_path}" "{dest_path}"'
+        batch_content.append(move_cmd)
+    
+    # Add completion message
+    batch_content.extend([
+        "",
+        "echo.",
+        "echo All alien files have been moved!",
+        "pause"
+    ])
+    
+    # Write batch file
+    batch_filename = "move_aliens.bat"
+    with open(batch_filename, 'w', encoding='utf-8') as f:
+        f.write('\n'.join(batch_content))
+    
+    print(f"\nCreated batch file: {batch_filename}")
+    print(f"This will move {len(alien_files)} files from 'files' to 'aliens' folder")
+
+if __name__ == "__main__":
+    print("=== Alien File Checker ===")
+    check_alien_files()
