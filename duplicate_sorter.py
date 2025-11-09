@@ -1,17 +1,15 @@
-# script versions 1.0
-
-# ******** H O W T O ***********
-
+# script versions 1.2
 # The script will allow you to check already downloaded files, get list of not downloaded files and list of all duplicate files with different sizes
 
-# WARNING! The script will save only ONE file with the same name and size.
-
 """
+H O W  T O:
+
 1. Export channel or group history to result.json file via telegram client (select only files in export popup) or tdl
 2. Set "path_to_downloads" to the path with files you already downloaded from the selected channel or group
-3. set fn_filter function to your tdl filter if you used any for filenamse in "path_to_downloads"
-3. this script will find all files with the same name and different sizes and save them to "duplicates.json"
-4. then script will check "path_to_downloads" for downloaded files and save only unique and not downloaded files to "download.json"
+3. Set "all_sizes" variable to TRUE or FALSE. True will save all duplicates, False will save only files with the same name and different file size
+4. set fn_filter function to your tdl filter if you used any for filenamse in "path_to_downloads"
+5. this script will find all files with the same name and different sizes and save them to "duplicates.json"
+6. then script will check "path_to_downloads" for downloaded files and save only unique and not downloaded files to "download.json"
 
 Use "duplicates.json" and "download.json" to download files via tdl.
 You can download all duplicate files with the following tdl command to the "duplicates" subfolder, add MessageId before file name to prevent files rewriting:
@@ -33,12 +31,16 @@ import os
 
 path_to_downloads = "files" # folder with downloaded files from group or channel, filenames must be the same as in TG channel or group
 path_to_json = "" # blank - current path, where result.json is located and where to save duplicates.json and download.json
+all_sizes = False # True - save duplicate NAMES and ALL SIZES, False - save duplicate NAMES and only UNIQUE file SIZES
 
 def fn_filter(fn):
   # for command:
   #    tdl dl -f "result.json" --template --% "{{ replace .FileName `|` `_` `?` `_` `\"` `_` \"\n\" `_`}}"
   # functon is:
   return fn.replace('?', '_').replace("\n" ,"_").replace("|", "_").replace('"', '_')
+
+
+
 
 # ********** B E G I N **********
 if not os.path.isfile(os.path.join(path_to_json, "result.json")):
@@ -82,26 +84,41 @@ def process_and_save_files():
         for message, file_size in message_size_pairs:
             combination = (file_name, file_size)
             combination_tracker[combination].append(message)
-    
+
+   
+    # only NAME + unique SIZE combination:
+   
     # Now identify which file_names have multiple unique combinations
     file_name_combinations = defaultdict(set)
     for (file_name, file_size), messages in combination_tracker.items():
         file_name_combinations[file_name].add(file_size)
     
     # Only keep files that have multiple unique file_name + file_size combinations
-    true_duplicate_files = {
+    true_duplicate_files_names = {
         file_name for file_name, sizes in file_name_combinations.items() 
         if len(sizes) > 1  # Only files with multiple different sizes
     }
+
+    # all NAME + SIZE combinations
+
+    # Find ALL duplicate files (any file that appears multiple times, regardless of size)
+    true_duplicate_files_all = {
+        file_name for file_name, messages in file_tracker.items() 
+        if len(messages) > 1  # Any file that appears multiple times
+    }
+
+    # set work_set variable according to configuration
+    work_set = true_duplicate_files_all if all_sizes else true_duplicate_files_names
     
     # Now collect one message from each combination of true duplicate files
     seen_combinations = set()
     for (file_name, file_size), messages in combination_tracker.items():
-        if file_name in true_duplicate_files and len(messages) > 0:
+        if file_name in work_set and len(messages) > 0:
             combination = (file_name, file_size)
             if combination not in seen_combinations:
                 duplicate_messages.append(messages[0])  # Take first message
                 seen_combinations.add(combination)
+               
     
     # Find non-existent non-duplicate files
     non_existent_messages = []
@@ -129,12 +146,12 @@ def process_and_save_files():
         json.dump(notexists_data, f, indent=2, ensure_ascii=False)
     
     # Print statistics
-    total_files_by_name = sum(len(messages) for messages in file_tracker.values() if len(messages) > 1)
-    true_duplicate_count = len(true_duplicate_files)
+    total_duplicate_instances = sum(len(messages) for messages in file_tracker.values() if len(messages) > 1)
+    true_duplicate_count = len(work_set)
     
-    print(f"Files with duplicate names: {len([x for x in file_tracker.values() if len(x) > 1])}")
-    print(f"True duplicates (multiple sizes): {true_duplicate_count}")
-    print(f"Saved {len(duplicate_messages)} unique duplicate messages to {duplicates_file}")
+    print(f"Total duplicate instances: {total_duplicate_instances}")
+    print(f"Files with duplicates: {true_duplicate_count} (method: {'same name, all sizes' if all_sizes else 'same name, only unique sizes'})")
+    print(f"Saved {len(duplicate_messages)} duplicate messages to {duplicates_file}")
     print(f"Saved {len(non_existent_messages)} non-existent messages to {not_exists_file}")
 
 # Run the processing
