@@ -10,6 +10,8 @@ Telegram Downloader extensions
 2. Creates Download List: Generates download.json containing only unique files that don't exist in your download path
 4. The resulting download.json and duplicates.json can be used with tdl (https://github.com/iyear/tdl) to download all duplicates and new files efficiently
 5. Workflow: result.json → (duplicate detection + local file check) → duplicates.json + download.json → tdl download
-6. This approach ensures you only download missing files while maintaining a record of all duplicates found in the Telegram export data.⋅⋅
+6. This approach ensures you only download missing files while maintaining a record of all duplicates found in the Telegram export data.
+
+<hr>
 
 ✔ **tdl_alien_files.py** - A Python script that identify files in "files" directory which not exists in "result.json" file and creates .bat file with move command for each file.
