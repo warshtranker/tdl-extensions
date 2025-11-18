@@ -1,6 +1,7 @@
 # tdl-extensions
 Telegram Downloader extensions
 
+✔ **tdl_remove_json_message_id.py** - A Python script for managing JSON message IDs - remove single or multiple IDs (comma-separated), clear ranges (before/after specific ID), and save to new files. Perfect for handling large JSON files when you need to resume downloads or clean download lists.
 
 ✔ **tdl_duplicate_sorter.py** - A Python script that processes Telegram channel/group messages from result.json and organizes files for efficient downloading. The script performs the following operations:
 1. Identifies Duplicate Files: Analyzes messages to find files with identical names but different sizes, saving them to duplicates.json
